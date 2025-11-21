@@ -1,6 +1,7 @@
 @font-face {
   font-family: 'RecifeText';
-  src: url('./RecifeText-Book.otf') format('opentype');
+  src: url('https://github.com/fredriksundvall/monkey-fonts/raw/refs/heads/main/RecifeText-Book.otf') format('opentype');
   font-weight: normal;
   font-style: normal;
 }
+
