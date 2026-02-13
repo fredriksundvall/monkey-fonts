@@ -33,6 +33,24 @@ class RepeatTableHeadersHandler extends Paged.Handler {
       renderedTable.setAttribute("repeated-headers", "true")
     })
   }
+  layout(rendered, layout) {
+  this.splitTablesRefs.forEach(ref => {
+    const renderedTable = rendered.querySelector("[data-ref='" + ref + "']")
+    if (!renderedTable) return
+    if (renderedTable.hasAttribute("repeated-headers")) return
+
+    const sourceTable = this.chunker.source.querySelector("[data-ref='" + ref + "']")
+    if (!sourceTable) return
+    const thead = sourceTable.querySelector("thead")
+    if (!thead) return
+
+    renderedTable.insertBefore(thead.cloneNode(true), renderedTable.firstChild)
+    renderedTable.setAttribute("repeated-headers", "true")
+
+    // NEW: markera att detta är en fortsättning på ny sida
+    renderedTable.classList.add("is-continued")
+  })
+}
   hideEmptyTables(pageElement, breakTokenNode) {
     this.splitTablesRefs.forEach(ref => {
       const table = pageElement.querySelector("[data-ref='" + ref + "']")
