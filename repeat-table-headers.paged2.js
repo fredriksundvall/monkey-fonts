@@ -40,6 +40,7 @@ class RepeatTableHeadersHandler extends Paged.Handler {
 
       renderedTable.insertBefore(thead.cloneNode(true), renderedTable.firstChild)
       renderedTable.setAttribute("repeated-headers", "true")
+renderedTable.style.outline = "3px solid red"
 
       // NEW: markera att detta är en fortsättningstabell på ny sida
       renderedTable.classList.add("is-continued")
