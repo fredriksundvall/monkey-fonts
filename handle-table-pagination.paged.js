@@ -1,4 +1,4 @@
-/* handle-table-pagination.paged.js.js - inline dev version */
+/* handle-table-pagination.paged.js - inline dev version */
 class RepeatTableHeadersHandler extends Paged.Handler {
   constructor(chunker, polisher, caller) {
     super(chunker, polisher, caller)
@@ -38,18 +38,51 @@ class RepeatTableHeadersHandler extends Paged.Handler {
       const thead = sourceTable.querySelector("thead")
       if (!thead) return
 
+      // Repeat header
       renderedTable.insertBefore(thead.cloneNode(true), renderedTable.firstChild)
       renderedTable.setAttribute("repeated-headers", "true")
-      if (!renderedTable.previousElementSibling || !renderedTable.previousElementSibling.classList.contains("mm-table-continued-spacer")) {
-  const spacer = document.createElement("div")
-  spacer.className = "mm-table-continued-spacer"
-  renderedTable.parentNode.insertBefore(spacer, renderedTable)
-}
-      
+
+      // Add spacer + label (only once per continued fragment)
+      const prev = renderedTable.previousElementSibling
+      const alreadyHasSpacer = prev && prev.classList && prev.classList.contains("mm-table-continued-spacer")
+      if (!alreadyHasSpacer) {
+        const h2 = this.getNearestPrevH2Text(sourceTable)
+        const title = h2 ? `${h2} - forts. från föregående sida` : "Forts. från föregående sida"
+
+        const spacer = document.createElement("div")
+        spacer.className = "mm-table-continued-spacer"
+        spacer.innerHTML = `<span class="mm-table-continued-label">${this.escapeHtml(title)}</span>`
+
+        renderedTable.parentNode.insertBefore(spacer, renderedTable)
+      }
 
       /* DEV: uncomment to verify handler runs */
       // renderedTable.style.outline = "3px solid red"
     })
+  }
+
+  // Find nearest preceding H2 (walk backwards in DOM)
+  getNearestPrevH2Text(node) {
+    let el = node
+    while (el) {
+      let prev = el.previousElementSibling
+      while (prev) {
+        if (prev.tagName === "H2") return (prev.textContent || "").trim()
+        prev = prev.previousElementSibling
+      }
+      el = el.parentElement
+    }
+    return ""
+  }
+
+  // Basic HTML escaping for injected label text
+  escapeHtml(str) {
+    return String(str)
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#039;")
   }
 
   hideEmptyTables(pageElement, breakTokenNode) {
