@@ -52,6 +52,7 @@ class RepeatTableHeadersHandler extends Paged.Handler {
 
         // Mark note so CSS can apply correct top padding/margins when it's at top of page content
         note.classList.add("mm-orphan-note")
+        note.style.outline = "3px solid red";
       }
     }
     // ---------------------------------------------------
