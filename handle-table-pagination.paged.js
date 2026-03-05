@@ -1,4 +1,4 @@
-/* handle-table-pagination.paged.js - inline dev version */
+/* handle-table-pagination.paged.js - patched for orphan mm-table-note */
 class RepeatTableHeadersHandler extends Paged.Handler {
   constructor(chunker, polisher, caller) {
     super(chunker, polisher, caller)
@@ -9,6 +9,15 @@ class RepeatTableHeadersHandler extends Paged.Handler {
     this.chunker = chunker
     this.splitTablesRefs = []
     if (!breakToken) return
+
+    // ----- NEW: orphan mm-table-note handling -----
+    const orphanTitle = this.getOrphanNoteTitle(breakToken.node, chunker)
+    if (orphanTitle) {
+      pageElement.setAttribute("data-mm-orphan-note-title", orphanTitle)
+      this.hideEmptyOrphanSpacer(pageElement)
+      return
+    }
+    // --------------------------------------------
 
     const node = breakToken.node
     const tables = this.findAllAncestors(node, "table")
@@ -27,6 +36,27 @@ class RepeatTableHeadersHandler extends Paged.Handler {
   }
 
   layout(rendered, layout) {
+    // ----- NEW: inject spacer for orphan note pages -----
+    const orphanTitle = rendered.getAttribute("data-mm-orphan-note-title")
+    if (orphanTitle) {
+      const note = rendered.querySelector(".mm-table-note")
+      if (note) {
+        const prev = note.previousElementSibling
+        const alreadyHasSpacer = prev && prev.classList && prev.classList.contains("mm-table-continued-spacer")
+        if (!alreadyHasSpacer) {
+          const spacer = document.createElement("div")
+          spacer.className = "mm-table-continued-spacer mm-orphan-note-spacer"
+          spacer.innerHTML = `<span class="mm-table-continued-label">${this.escapeHtml(orphanTitle)}</span>`
+          note.parentNode.insertBefore(spacer, note)
+        }
+
+        // Mark note so CSS can apply correct top padding/margins when it's at top of page content
+        note.classList.add("mm-orphan-note")
+      }
+    }
+    // ---------------------------------------------------
+
+    // Existing: split table header repeat + continued spacer
     this.splitTablesRefs.forEach(ref => {
       const renderedTable = rendered.querySelector("[data-ref='" + ref + "']")
       if (!renderedTable) return
@@ -55,11 +85,42 @@ class RepeatTableHeadersHandler extends Paged.Handler {
 
         renderedTable.parentNode.insertBefore(spacer, renderedTable)
       }
-
-      /* DEV: uncomment to verify handler runs */
-      // renderedTable.style.outline = "3px solid red"
     })
   }
+
+  // ----- NEW: determine orphan note title when a mm-table-note is pushed to next page -----
+  getOrphanNoteTitle(node, chunker) {
+    // Find enclosing .mm-table-note in source
+    const note = (node && node.nodeType === 1 && node.classList && node.classList.contains("mm-table-note"))
+      ? node
+      : this.findFirstAncestor(node, ".mm-table-note")
+
+    if (!note) return ""
+
+    // Find previous significant element sibling in source (skip whitespace/comments)
+    const prevEl = this.prevSignificantElement(note)
+    if (!prevEl || prevEl.tagName !== "TABLE") return ""
+
+    // Use nearest preceding H2 as title (same logic as split tables)
+    const h2 = this.getNearestPrevH2Text(prevEl)
+    const title = h2 ? `${h2} - forts. från föregående sida` : "Forts. från föregående sida"
+    return title
+  }
+
+  prevSignificantElement(el) {
+    let prev = el.previousSibling
+    while (prev) {
+      if (prev.nodeType === 1) return prev
+      if (prev.nodeType === 3 && /[^\t\n\r ]/.test(prev.textContent)) return null
+      prev = prev.previousSibling
+    }
+    return null
+  }
+
+  hideEmptyOrphanSpacer(pageElement) {
+    // No-op placeholder; keeps symmetry with hideEmptyTables if you later want extra logic here
+  }
+  // -------------------------------------------------------------------------------
 
   // Find nearest preceding H2 (walk backwards in DOM)
   getNearestPrevH2Text(node) {
@@ -107,7 +168,7 @@ class RepeatTableHeadersHandler extends Paged.Handler {
   }
 
   findFirstAncestor(element, selector) {
-    while (element.parentNode && element.parentNode.nodeType === 1) {
+    while (element && element.parentNode && element.parentNode.nodeType === 1) {
       if (element.parentNode.matches(selector)) return element.parentNode
       element = element.parentNode
     }
