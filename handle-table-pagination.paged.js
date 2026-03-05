@@ -46,7 +46,7 @@ class RepeatTableHeadersHandler extends Paged.Handler {
         if (!alreadyHasSpacer) {
           const spacer = document.createElement("div")
           spacer.className = "mm-table-continued-spacer mm-orphan-note-spacer"
-          spacer.innerHTML = `<span class="mm-table-continued-label">${this.escapeHtml(orphanTitle)}</span>`
+          spacer.innerHTML = `<span class="mm-table-continued-label">DEBUG orphan: ${this.escapeHtml(orphanTitle)}</span>`
           note.parentNode.insertBefore(spacer, note)
         }
 
